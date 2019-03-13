@@ -21,10 +21,11 @@ function buildMetadata(sample) {
   // buildGauge(data.WFREQ);
 }
 
+// Calls this function for the first time to build chart
 function buildCharts(sample) {
   // @TODO: Use `d3.json` to fetch the sample data for the plots
   d3.json(`/samples/${sample}`).then((sampleData) => {
-    // Build Pie Chart
+    
     var sampleValues = sampleData[0]['sample_values'];
     var otuIDs = sampleData[0]['otu_ids'];
     var labels = [];
@@ -33,7 +34,7 @@ function buildCharts(sample) {
       labels = otuIDs.map(function(item) {
         return otuData[item]
       });
-      console.log('labels, ',labels);
+      // Build Pie Chart
       var pieData = [{
         values: sampleValues.slice(0, 10),
         labels: otuIDs.slice(0, 10),
@@ -46,9 +47,68 @@ function buildCharts(sample) {
       };
       var PIE = document.getElementById('pie');
       Plotly.plot(PIE, pieData, pieLayout);
+
+      // Build Bubble Chart
+      var bubbleData = [{
+        x: otuIDs,
+        y: sampleValues,
+        text: labels,
+        mode: 'markers',
+        marker: {
+          size: sampleValues,
+          color: otuIDs,
+          colorscale: "Earth",
+        } 
+      }];
+
+      var bubbleLayout = {
+        margin: { t: 0 },
+        hovermode: 'closest',
+        xaxis: { title: 'OTU ID' }
+      };
+      var BUBBLE = document.getElementById('bubble');
+      Plotly.plot(BUBBLE, bubbleData, bubbleLayout);
     });
   });
-    // @TODO: Build a Bubble Chart using the sample data
+}
+
+// Calls this function each time to update existing chart based on the option change
+function updateCharts(sample) {
+  // @TODO: Use `d3.json` to fetch the sample data for the plots
+  d3.json(`/samples/${sample}`).then((sampleData) => {
+    
+    var sampleValues = sampleData[0]['sample_values'];
+    var otuIDs = sampleData[0]['otu_ids'];
+    var labels = [];
+    // get otu_labels for hovertext
+    d3.json('/otu').then((otuData) => { 
+      labels = otuIDs.map(function(item) {
+        return otuData[item]
+      });
+      console.log('in update charts sample values', sampleValues);
+      console.log('in update charts outids, ', otuIDs);
+
+      console.log('in update charts labels, ',labels);
+      // Build Pie Chart
+      var pieUpdate = {
+        values: [sampleValues.slice(0, 10)],
+        labels: [otuIDs.slice(0, 10)],
+        hovertext : [labels.slice(0, 10)],
+        hoverinfo: 'hovertext',
+        type: 'pie'
+      };
+      var PIE = document.getElementById('pie');
+      Plotly.restyle(PIE, pieUpdate);
+
+      // Build Bubble Chart
+      var BUBBLE = document.getElementById('bubble');
+      Plotly.restyle(BUBBLE, 'x', [otuIDs]);
+      Plotly.restyle(BUBBLE, 'y', [sampleValues]);
+      Plotly.restyle(BUBBLE, 'text', [labels]);
+      Plotly.restyle(BUBBLE, 'marker.size', [sampleValues]);
+      Plotly.restyle(BUBBLE, 'marker.color', [otuIDs]);
+    });
+  });
 }
 
 function init() {
@@ -74,7 +134,7 @@ function init() {
 
 function optionChanged(newSample) {
   // Fetch new data each time a new sample is selected
-  buildCharts(newSample);
+  updateCharts(newSample);
   buildMetadata(newSample);
 }
 
