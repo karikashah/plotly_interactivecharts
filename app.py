@@ -48,33 +48,19 @@ def index():
 @app.route("/names")
 def names():
     """Return a list of sample names."""
-    print("#################################### In  names")
     # Use Pandas to perform the sql query
     stmt = session.query(Samples).statement
     df = pd.read_sql_query(stmt, session.bind)
     df.set_index('otu_id', inplace=True)
 
     # Return a list of the column names (sample names)
-    # print("list(df.columns)  ",list(df.columns))
     return jsonify(list(df.columns))
-
-#################################################
-# Returns a list of OTU descriptions 
-@app.route('/otu')
-def otu():
-    """Return a list of OTU descriptions."""
-    results = session.query(OTU.lowest_taxonomic_unit_found).all()
-
-    # Use numpy ravel to extract list of tuples into a list of OTU descriptions
-    otu_list = list(np.ravel(results))
-    return jsonify(otu_list)
 
 #################################################
 # Returns a json dictionary of sample metadata 
 @app.route("/metadata/<sample>")
 def sample_metadata(sample):
     """Return the MetaData for a given sample."""
-    print("#############################  In metadata")
     sel = [
         Samples_Metadata.SAMPLEID,
         Samples_Metadata.ETHNICITY,
@@ -98,7 +84,6 @@ def sample_metadata(sample):
         sample_metadata["BBTYPE"] = result[5]
         sample_metadata["WFREQ"] = result[6]
 
-    print(sample_metadata)
     return jsonify(sample_metadata)
 
 #################################################
@@ -120,6 +105,7 @@ def sample_wfreq(sample):
 @app.route("/samples/<sample>")
 def samples(sample):
     """Return `otu_ids`, `otu_labels`,and `sample_values`."""
+    print("#$#$#$#$#$$ in samples")
     stmt = session.query(Samples).statement
     df = pd.read_sql_query(stmt, session.bind)
 
@@ -137,9 +123,21 @@ def samples(sample):
     data = [{
         "otu_ids": df[sample].index.values.tolist(),
         "sample_values": df[sample].values.tolist(),
-        "otu_labels": df[sample].otu_label.tolist()
+        # "otu_labels": df[sample].otu_label.tolist()
     }]
+    print("jsonify(data)",jsonify(data))
     return jsonify(data)
 
+#################################################
+# Returns a list of OTU descriptions 
+@app.route('/otu')
+def otu():
+    """Return a list of OTU descriptions."""
+    results = session.query(OTU.lowest_taxonomic_unit_found).all()
+
+    # Use numpy ravel to extract list of tuples into a list of OTU descriptions
+    otu_list = list(np.ravel(results))
+    return jsonify(otu_list)
+    
 if __name__ == "__main__":
     app.run()
